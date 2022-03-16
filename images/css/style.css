@@ -1,0 +1,33 @@
+body{
+    background-color: wheat;
+    overflow: hidden;
+}
+h1{
+    font-family: monospace;
+}
+li{
+    font-size: 30px;
+}
+
+.menuContainer{
+display: flex;
+flex-direction: row;
+justify-content: center;
+text-align: center;
+margin-top: 50px;
+}
+.button{
+    width: 400px;
+    height: 100px;
+    background-color: #7f3eb8;
+    border: 2px solid #500394;
+    border-radius: 5px;
+}
+.controlsContainer{
+    display: flex;
+    justify-content: space-evenly;
+    text-align: center;
+}
+.player{
+    flex-direction: row;
+}

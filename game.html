@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="images/css/style.css">
+    <link rel="stylesheet" href="sounds/classic_hurt.mp3">
+    <title>Document</title>
+</head>
+<body>
+
+    <progress id="zombieHealth" style="margin-left: 350px; margin-top: 65px" value="30" max="30"></progress> <!--En progress bar som jag använder för en hp bar-->
+    
+    <script src="simple.js">
+    { 
+      var player = {x: 10, y: 520} //Koordinater för min spelare
+      var playerSpeed = 10; //Variabel med fart för min spelare
+      var playerScore = 0; //Variabel med poäng för min spelare
+
+      var zombie = {x: 900, y: 100} //Koordinater för zombie
+      var zombieSpeed = 8; //Variabel med fart för zombie
+      var zombieScore = 0; //Variabel med poäng för zombie
+
+      let playerHealth = document.getElementById("zombieHealth") //En variabel som innehåller liv för spelaren
+
+      var time = 0; //En variabel som jag använder för att räkna tid med
+      var updatesPerSecond = 60; //Ändrar updates per second för att den ska checka update oftare vilket reducerar buggar
+      
+      var bullets = []; //En array som ska innehålla koordinater för skotten
+      var bulletSpeed = 10; //En variabel för farten på skotten
+      var bulletCooldown = true; //En variabel som kollar ifall ens cooldown på vapnet är sant eller falskt
+      var bulletCooldownTimer = 0; //En variabel som håller koll på hur lång tid det var sen man sköt
+
+      var dashCooldown = true; //En variabel som kollar ifall ens cooldown på dash är sant eller falskt
+      var dashCooldownTimer = 0; //En variabel som håller koll på hur lång tid det var sen man dashade
+      var dashSpeed = 150; //En variabel som innehåller farten på ens dash
+    
+      preloadSound("sounds/classic_hurt.mp3"); //Laddar in ett ljud
+      preloadSound("sounds/minecraft-grass-walking-sound-effect.mp3"); //Laddar in ett ljud
+      preloadSound("sounds/BoxCat-Games-Battle-Boss.mp3"); //Laddar in ett ljud
+      preloadSound("sounds/bow_shoot.mp3") //Laddar in ett ljud
+      preloadSound("sounds/minecraft_hit_sound.mp3"); //Laddar in ett ljud
+      preloadSound("sounds/zombie_death.mp3"); //Laddar in ett ljud
+
+      var obstacleColor = "black"; //En variabel för färgen på hindrena
+      var obstacleOne =   {x: 150, y: 150, xWidth: 300, yHeight: 20} //Koordinater, bredd och höjd för rektangeln längst upp till vänster
+      var obstacleTwo =   {x: 650, y: 0, xWidth: 20, yHeight: 170}   //Koordinater, bredd och höjd för rektangeln höger om den längst upp till vänster
+      var obstacleThree = {x: 200, y: 500, xWidth: 300, yHeight: 20} //Koordinater, bredd och höjd för rektangeln längst ner till vänster
+      var obstacleFour =  {x: 900, y: 400, xWidth: 20, yHeight: 200} //Koordinater, bredd och höjd för rektangeln som är i mitten och går lodrätt
+      var obstacleFive =  {x: 1100, y: 400, xWidth: 200, yHeight: 20}//Koordinater, bredd och höjd för rektangeln som är näst längst till höger och går vågrätt
+      var obstacleSix =   {x: 1300, y: 220, xWidth: 20, yHeight: 200}//Koordinater, bredd och höjd för rektangeln som är längst till höger och går lodrätt
+    
+      function update()
+      {
+            clearScreen(); //Rensar skärmen 
+            if(time / updatesPerSecond < 0.2){
+                loopSound("sounds/BoxCat-Games-Battle-Boss.mp3", 0.3); //Spelar ett ljud i början av spelet
+            }
+
+            rectangle(obstacleOne.x, obstacleOne.y, obstacleOne.xWidth, obstacleOne.yHeight, obstacleColor);     //Lägger in hinder
+            rectangle(obstacleTwo.x, obstacleTwo.y, obstacleTwo.xWidth, obstacleTwo.yHeight, obstacleColor);     //Lägger in hinder
+            rectangle(obstacleThree.x, obstacleThree.y, obstacleThree.xWidth, obstacleThree.yHeight, obstacleColor); //Lägger in hinder
+            rectangle(obstacleFour.x, obstacleFour.y, obstacleFour.xWidth, obstacleFour.yHeight, obstacleColor);   //Lägger in hinder
+            rectangle(obstacleFive.x, obstacleFive.y, obstacleFive.xWidth, obstacleFive.yHeight, obstacleColor);   //Lägger in hinder
+            rectangle(obstacleSix.x, obstacleSix.y, obstacleSix.xWidth, obstacleSix.yHeight, obstacleColor);     //Lägger in hinder
+
+            picture(player.x, player.y, "images/2dPixelGuy.png") // Lägger in spelaren
+            if(keyboard.w)  {player.y -= playerSpeed;} //Fixar kontroller åt spelaren
+            if(keyboard.s)  {player.y += playerSpeed;} //Fixar kontroller åt spelaren
+            if(keyboard.a)  {player.x -= playerSpeed;} //Fixar kontroller åt spelaren
+            if(keyboard.d)  {player.x += playerSpeed;} //Fixar kontroller åt spelaren
+
+            if(player.y < 0)                  {player.y = 0;}                 //Spelaren kan inte gå utanför skärmen
+            if(player.y >= totalHeight - 100) {player.y = totalHeight - 100;} //Spelaren kan inte gå utanför skärmen
+            if(player.x < 0)                  {player.x = 0;}                 //Spelaren kan inte gå utanför skärmen
+            if(player.x >= totalWidth - 90)   {player.x = totalWidth - 90;}   //Spelaren kan inte gå utanför skärmen
+
+            picture(zombie.x, zombie.y, "images/zombie2.png");  //Lägger in Zombien
+            if(keyboard.up)    {zombie.y -= zombieSpeed;}  //Fixar kontroller åt zombien
+            if(keyboard.down)  {zombie.y += zombieSpeed;}  //Fixar kontroller åt zombien
+            if(keyboard.left)  {zombie.x -= zombieSpeed;}  //Fixar kontroller åt zombien
+            if(keyboard.right) {zombie.x += zombieSpeed;}  //Fixar kontroller åt zombien
+
+            if(zombie.y < 0)                  {zombie.y = 0;}                 //Zombien kan inte gå utanför skärmen
+            if(zombie.y >= totalHeight - 130) {zombie.y = totalHeight - 130;} //Zombien kan inte gå utanför skärmen
+            if(zombie.x < 0)                  {zombie.x = 0;}                 //Zombien kan inte gå utanför skärmen
+            if(zombie.x >= totalWidth - 110)  {zombie.x = totalWidth - 110;}  //Zombien kan inte gå utanför skärmen
+
+            if(keyboard.space && bulletCooldown == true){
+                bullets.push({x: player.x + 80, y: player.y + 50}); //Om man trycker på space så sparas koordinaterna för spelaren som sedan används för att skjuta en pil från de koordinaterna
+                bulletCooldown = false; //"bulletCooldown" blir falskt vilket betyder att man inte kan skjuta igen tills "bulletCooldown" blir sant igen
+                playSound("sounds/bow_shoot.mp3"); //Spelar ett ljud när man skjuter
+            }
+
+            if(bulletCooldown == false){
+                bulletCooldownTimer += 1; //Om "bulletCooldown" blir falskt så börjar timern tills man kan skjuta igen
+            }
+            if(ceil(bulletCooldownTimer / updatesPerSecond) == 3){ 
+                bulletCooldown = true; //Efter 3 sekunder så blir "bulletCooldown" sant och då kan man skjuta igen
+                bulletCooldownTimer = 0; //Timern börjar om på 0
+            }
+            for(var i = 0; i < bullets.length; i++){ //En for loop som loopar igenom hela min array för bullets
+                var bullet = bullets[i]; //En variabel som innehåller koordinaterna för kula[i]
+                picture(bullet.x, bullet.y, "images/arrow.png"); //Lägger in en bild på koordinaterna för kula[i]
+                bullet.x += bulletSpeed; //Gör så att kulan åker framåt
+
+                if(distance(bullet.x, bullet.y, zombie.x, zombie.y + 45) < 90){
+                    zombieHealth.value -= 10; //Om skottet träffar zombien så blir zombien av med 10 liv
+                    bullets.pop(); //Tar bort skottet om det träffar zombien
+                    playSound("sounds/minecraft_hit_sound.mp3"); //Spelar ett ljud
+                }
+            }
+
+            if(keyboard.ctrl && keyboard.left && dashCooldown == true){
+                zombie.x -= dashSpeed; //Man dashar åt vänster om man håller nere vänster pil
+                dashCooldown = false; //"dashCooldown" blir falsk så man inte kan dasha igen
+            }
+            if(keyboard.ctrl && keyboard.right && dashCooldown == true){
+                zombie.x += dashSpeed; //Man dashar åt höger om man håller nere höger pil
+                dashCooldown = false; //"dashCooldown" blir falsk så man inte kan dasha igen
+            }
+            if(keyboard.ctrl && keyboard.up && dashCooldown == true){
+                zombie.y -= dashSpeed; //Man dashar upp om man håller nere upp pilen
+                dashCooldown = false; //"dashCooldown" blir falsk så man inte kan dasha igen
+            }
+            if(keyboard.ctrl && keyboard.down && dashCooldown == true){
+                zombie.y += dashSpeed;//Man dashar nedåt om man håller nere nedåt pilen
+                dashCooldown = false; //"dashCooldown" blir falsk så man inte kan dasha igen
+            }
+            if(dashCooldown == false){
+                dashCooldownTimer += 1; //Om "dashCooldown" blir falsk så startar timern "dashCooldownTimer" tills man kan dasha igen
+            }
+            if(ceil(dashCooldownTimer / updatesPerSecond) == 3){ 
+                dashCooldown = true; //Efter 3 sekunder så blir "dashCooldown" sant och då kan man dasha igen
+                dashCooldownTimer = 0; //Timern börjar om på 0
+            }
+
+            //Player Collision Detection        
+            if(player.y > obstacleOne.y - 100 && player.y < obstacleOne.y && player.x > obstacleOne.x - 85 && player.x < obstacleOne.x + 295) 
+            {
+                player.y = obstacleOne.y - 100; //Gör så man inte kan gå igenom "obstacleOne" ovanifrån med spelaren
+            } 
+            if(player.y < obstacleOne.y + 20 && player.y > obstacleOne.y - 100 && player.x > obstacleOne.x - 85 && player.x < obstacleOne.x + 295)
+            {
+                player.y = obstacleOne.y + 20; //Gör så man inte kan gå igenom "obstacleOne" underifrån med spelaren
+            }
+
+            if(player.x > obstacleTwo.x - 85 && player.x < obstacleTwo.x && player.y > obstacleTwo.y - 90 && player.y <obstacleTwo.y + 170){
+                player.x = obstacleTwo.x - 85; //Gör så man inte kan gå igenom "obstacleFive" från vänster med spelaren
+            }
+            if(player.x <= obstacleTwo.x + 20 && player.x > obstacleTwo.x - 85 && player.y > obstacleTwo.y - 90 && player.y <obstacleTwo.y + 170){
+                player.x = obstacleTwo.x + 20; //Gör så man inte kan gå igenom "ObstacleTwo" från höger med spelaren
+            }
+
+            if(player.y > obstacleThree.y - 100 && player.y < obstacleThree.y && player.x > obstacleThree.x - 90 && player.x < obstacleThree.x + 300) 
+            {
+                player.y = obstacleThree.y - 100; //Gör så man inte kan gå igenom "obstacleThree" ovanifrån med spelaren
+            }                 
+            if(player.y < obstacleThree.y + 20 && player.y > obstacleThree.y - 100 && player.x > obstacleThree.x - 90 && player.x < obstacleThree.x + 300)
+            {
+                player.y = obstacleThree.y + 20; //Gör så man inte kan gå igenom "obstacleThree" underifrån med spelaren
+            }
+
+            if(player.x > obstacleFour.x - 85 && player.x < obstacleFour.x && player.y > obstacleFour.y - 90 && player.y <obstacleFour.y + 170){
+                player.x = obstacleFour.x - 85; //Gör så man inte kan gå igenom "obstacleFour" från vänster med spelaren
+            }
+            if(player.x <= obstacleFour.x + 20 && player.x > obstacleFour.x - 85 && player.y > obstacleFour.y - 90 && player.y <obstacleFour.y + 170){
+                player.x = obstacleFour.x + 20; //Gör så man inte kan gå igenom "ObstacleFour" från höger med spelaren
+            }
+
+            if(player.y > obstacleFive.y - 100 && player.y < obstacleFive.y && player.x > obstacleFive.x - 90 && player.x < obstacleFive.x + 200) 
+            {
+                player.y = obstacleFive.y - 100; //Gör så man inte kan gå igenom "obstacleFive" ovanifrån med spelaren
+            }                 
+            if(player.y < obstacleFive.y + 20 && player.y > obstacleFive.y - 100 && player.x > obstacleFive.x - 90 && player.x < obstacleFive.x + 200)
+            {
+                player.y = obstacleFive.y + 20; //Gör så man inte kan gå igenom "obstacleFive" underifrån med spelaren
+            }
+
+            if(player.x > obstacleSix.x - 85 && player.x < obstacleSix.x && player.y > obstacleSix.y - 90 && player.y <obstacleSix.y + 170){
+                player.x = obstacleSix.x - 85; //Gör så man inte kan gå igenom "obstacleSix" från vänster med spelaren
+            }
+            if(player.x <= obstacleSix.x + 20 && player.x > obstacleSix.x - 85 && player.y > obstacleSix.y - 90 && player.y <obstacleSix.y + 170){
+                player.x = obstacleSix.x + 20; //Gör så man inte kan gå igenom "ObstacleSix" från höger med spelaren
+            }
+            
+            //Zombie Collision Detection
+            if(zombie.y > obstacleOne.y - 125 && zombie.y < obstacleOne.y && zombie.x > obstacleOne.x - 85 && zombie.x < obstacleOne.x + 295) 
+            {
+                zombie.y = obstacleOne.y - 125; //Gör så man inte kan gå igenom "obstacleOne" ovanifrån med zombien
+            } 
+            if(zombie.y < obstacleOne.y + 20 && zombie.y > obstacleOne.y - 100 && zombie.x > obstacleOne.x - 85 && zombie.x < obstacleOne.x + 295)
+            {
+                zombie.y = obstacleOne.y + 20; //Gör så man inte kan gå igenom "obstacleOne" underifrån med zombien
+            }
+
+            if(zombie.x > obstacleTwo.x - 105 && zombie.x < obstacleTwo.x && zombie.y > obstacleTwo.y - 90 && zombie.y <obstacleTwo.y + 170){
+                zombie.x = obstacleTwo.x - 105; //Gör så man inte kan gå igenom "obstacleTwo" från vänster med zombien
+            }
+            if(zombie.x <= obstacleTwo.x + 20 && zombie.x > obstacleTwo.x - 85 && zombie.y > obstacleTwo.y - 90 && zombie.y <obstacleTwo.y + 170){
+                zombie.x = obstacleTwo.x + 20; //Gör så man inte kan gå igenom "ObstacleTwo" från höger med zombien
+            }
+
+            if(zombie.y > obstacleThree.y - 125 && zombie.y < obstacleThree.y && zombie.x > obstacleThree.x - 90 && zombie.x < obstacleThree.x + 300) 
+            {
+                zombie.y = obstacleThree.y - 125; //Gör så man inte kan gå igenom "obstacleThree" ovanifrån med zombien
+            }                 
+            if(zombie.y < obstacleThree.y + 20 && zombie.y > obstacleThree.y - 100 && zombie.x > obstacleThree.x - 90 && zombie.x < obstacleThree.x + 300)
+            {
+                zombie.y = obstacleThree.y + 20; //Gör så man inte kan gå igenom "obstacleThree" underifrån med zombien
+            }
+
+            if(zombie.x > obstacleFour.x - 100 && zombie.x < obstacleFour.x && zombie.y > obstacleFour.y - 130 && zombie.y <obstacleFour.y + 185){
+                zombie.x = obstacleFour.x - 100; //Gör så man inte kan gå igenom "obstacleFour" från vänster med zombien
+            }
+            if(zombie.x <= obstacleFour.x + 20 && zombie.x > obstacleFour.x - 85 && zombie.y > obstacleFour.y - 130 && zombie.y <obstacleFour.y + 185){
+                zombie.x = obstacleFour.x + 20; //Gör så man inte kan gå igenom "ObstacleFour från höger med zombien
+            }
+
+            if(zombie.y > obstacleFive.y - 125 && zombie.y < obstacleFive.y && zombie.x > obstacleFive.x - 90 && zombie.x < obstacleFive.x + 210) 
+            {
+                zombie.y = obstacleFive.y - 125; //Gör så man inte kan gå igenom "obstacleFive" ovanifrån med zombien
+            }                 
+            if(zombie.y < obstacleFive.y + 20 && zombie.y > obstacleFive.y - 100 && zombie.x > obstacleFive.x - 90 && zombie.x < obstacleFive.x + 210)
+            {
+                zombie.y = obstacleFive.y + 20; //Gör så man inte kan gå igenom "obstacleFive" underifrån med zombien
+            }
+
+            if(zombie.x > obstacleSix.x - 100 && zombie.x < obstacleSix.x && zombie.y > obstacleSix.y - 140 && zombie.y <obstacleSix.y + 170){
+                zombie.x = obstacleSix.x - 100; //Gör så man inte kan gå igenom "obstacleSix" från vänster med zombien
+            }
+            if(zombie.x <= obstacleSix.x + 20 && zombie.x > obstacleSix.x - 85 && zombie.y > obstacleSix.y - 140 && zombie.y <obstacleSix.y + 170){
+                zombie.x = obstacleSix.x + 20; //Gör så man inte kan gå igenom "ObstacleSix" från höger med zombien
+            }
+
+            if(distance(player, zombie) < 100){
+                playerLost(); //Om spelaren nuddar zombien så kallar jag funktionen "playerLost"
+            }
+
+            if(time / updatesPerSecond >= 30){
+                zombieLost(); //Om tiden blir 30 sekunder så förlorar zombien och jag kallar funktionen "zombieLost"
+            }
+
+            if(zombieHealth.value <= 0){ //Om zombien får slut på liv händer samtligt:
+                zombieLost(); //Kallar på funktionen "zombieLost"
+                playSound("sounds/zombie_death.mp3"); //Spelar ett ljud
+            }
+
+    
+            text(10, 30, 30, "Zombie Score:" + zombieScore, "red"); //En text där det står "Zombie Score:" och sedan variabeln "zombieScore" som innehåller zombiens poäng
+            text(10, 60, 30, "Player Score:" + playerScore, "red"); //En text där det står "Player Score:" och sedan variabeln "playerScore" som innehåller spelarens poäng
+            text(totalWidth / 2 - 20, totalHeight / 2 - 20, 80, ceil(time / updatesPerSecond), "red"); //En text som innehåller hur lång tid det har gått
+            text(10, 90, 30, "Zombie Health:"); //En text där det står "Zombie Health:"
+            
+            time += 1; //En variabel som ökar med ett varje gång den går igenom update funktionen, använder den för att räkna tid
+        }
+
+        function playerLost(){ //När spelaren dör så händer samtligt:
+            zombieScore += 1; //Zombien får ett poäng
+            bullets = []; //Tar bort alla bullets från skärmen
+            player.x = 10; //Spelaren flyttas till startposition
+            player.y = 520; //Spelaren flyttas till startposition
+            zombie.x = 900; //Zombien flyttas till startposition
+            zombie.y = 100; //Zombien flyttas till startpositon
+            time = 0; //Tiden börjar om på 0
+            zombieHealth.value = zombieHealth.max; //Zombien får tillbaks sina liv
+            playSound("sounds/classic_hurt.mp3"); //Ett ljud av att spelaren skadas spelas
+        }
+
+        function zombieLost(){ //Om zombien förlorar så händer samtligt:
+            time = 0; //Tiden börjar om
+            bullets = []; //Tar bort alla bullets från skärmen
+            zombieHealth.value = zombieHealth.max; //Zombien får tillbaks sina liv
+            playerScore += 1; //Spelaren får ett poäng
+            player.x = 10; //Spelaren flyttas till startposition
+            player.y = 520;//Spelaren flyttas till startposition
+            zombie.x = 900;//Zombien flyttas till startposition
+            zombie.y = 100;//Zombien flyttas till startposition
+        }
+    }
+    </script>
+</body>
+</html>
